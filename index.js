@@ -25,14 +25,17 @@ if (!JWT_SECRET) {
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: "10kb" }));
 
-const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:5173";
-app.use(
-  cors({
-    origin: corsOrigin,
-    methods: ["GET", "POST"],
-    credentials: true,
-  })
-);
+const corsEnv = process.env.CORS_ORIGIN || "http://localhost:5173";
+const allowedOrigins = corsEnv.split(",").map((s) => s.trim()).filter(Boolean);
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  methods: ["GET", "POST"],
+  credentials: true,
+}));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
